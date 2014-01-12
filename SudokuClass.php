@@ -1,18 +1,17 @@
 <?php 
 /**
+* Implementation of backtracking and forward checking algorithms for sudoku
+* @author Azim Gadjiagayev (http://azimgd.com)
+*/
 
 class SudokuSolver
 {
-	//file to load sudoku from
+	//file to extract sudoku puzzle from
 	const FILE = 'grid.txt';
-	private $_validVars;
-	public $_grid_init;
 	private $_grid;
 
 	public function __construct()
 	{
-		$this->_validVars = range(1, 9);
-
 		$this->_loadGridFromFile();
 		$this->_grid = $this->_solve($this->_grid);
 	}
@@ -56,11 +55,14 @@ class SudokuSolver
 			return false;
 		}
 
+		//calculating coordinates
 		$row = floor($count / 9);
 		$col = floor($count % 9);
 
+		//if cell is unsolved
 		if($this->_grid[$row][$col] == 0)
 		{
+			//check each possible move
 			foreach($this->_getAllowed($this->_grid, $row, $col) as $inputKey => $inputVal)
 			{
 				$this->_grid[$row][$col] = (int)$inputVal;
@@ -84,29 +86,25 @@ class SudokuSolver
 	{
 		while(true)
 		{
-			//to save possible results
-			$options = array();
+			$solutions = array();
 
-			//looping over grid
 			foreach($grid as $rowIndex => $row)
 			{
 				foreach($row as $columnIndex => $cell)
 				{
-					//skip if cell is filled
+					//skip if cell is solved
 					if(!empty($cell))
-					{
 						continue;
-					}
 
-					//get allowed inputs for this cell
-					//returns an array of elements
+					//get allowed solutions for this cell
+					//returns an array of solutions
 					$allowed = $this->_getAllowed($grid, $rowIndex, $columnIndex);
 					
-					//if no inputs are allowed for this cell
+					//if no no solution has been found
 					if(count($allowed) == 0)
 						return false;
 
-					$options[] = array(
+					$solutions[] = array(
 						'rowIndex' => $rowIndex,
 						'columnIndex' => $columnIndex,
 						'allowed' => $allowed
@@ -115,30 +113,28 @@ class SudokuSolver
 			}
 
 			//if puzzle is solved
-			if(count($options) == 0)
+			if(count($solutions) == 0)
 			{
 				return $grid;
 			}
 			
-			//sort options to get most
-			usort($options, array($this, '_sortOptions'));
+			//sort solutions by quantity
+			//this tweak will increse speed of the algorithm
+			usort($solutions, array($this, '_sortOptions'));
 
-			//if array of valid inputs has only one element
-			//assign it to related cell and skip to next iteration
-			if(count($options[0]['allowed']) == 1)
+			//assign solution to cell if solution has been found
+			if(count($solutions[0]['allowed']) == 1)
 			{
-				$grid[$options[0]['rowIndex']][$options[0]['columnIndex']] = current($options[0]['allowed']);
+				$grid[$solutions[0]['rowIndex']][$solutions[0]['columnIndex']] = current($solutions[0]['allowed']);
 				continue;
 			}
 			
-			//loop over possible values
-			//for related cell
-			foreach($options[0]['allowed'] as $value)
+			foreach($solutions[0]['allowed'] as $value)
 			{
 				$tmp = $grid;
 				$tmp[$options[0]['rowIndex']][$options[0]['columnIndex']] = $value;
 
-				//checking for next solutions
+				//trying each solution
 				if($result = $this->_solve($tmp))
 				{
 					return $result;
@@ -150,10 +146,11 @@ class SudokuSolver
 	}
 	
 	/**
-	* Get allowed inputs for given coordinates
+	* Get allowed solutions for given coordinates
 	*/
 	private function _getAllowed($grid, $rowIndex, $columnIndex)
 	{
+		$valid = range(1, 9);
 		//adding row values into invalid arr
 		$invalid = $grid[$rowIndex];
 		//adding col values into invalid arr
@@ -161,6 +158,7 @@ class SudokuSolver
 		{
 			$invalid[] = $row[$columnIndex];
 		}
+
 		//getting box coordinates
 		$boxRow = $rowIndex % 3 == 0 ? $rowIndex : $rowIndex - $rowIndex % 3;
 		$boxCol = $columnIndex % 3 == 0 ? $columnIndex : $columnIndex - $columnIndex % 3;
@@ -173,7 +171,7 @@ class SudokuSolver
 			array_slice($grid[$boxRow + 2], $boxCol, 3)
 		));
 
-		return array_diff($this->_validVars, $invalid);
+		return array_diff($valid, $invalid);
 	}
 	
 	/**
