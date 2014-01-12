@@ -1,7 +1,5 @@
 <?php 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-include 'SudokuClass.php';
+include 'sudokuClass.php';
 include 'functions.php';
 
 $puzzle = new SudokuSolver();
